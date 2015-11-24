@@ -24,7 +24,7 @@ Make an instance of the cache, modifying the parameters to fit your use case
 			"type": "branch",
 			"timeout": 300,
 			"schema": {
-				"$ref": "//../schema/branch.json"
+				"$ref": "//../resources/branch.json"
 			},
 			"debug": false,
 			"limit_replicas": false
@@ -36,7 +36,7 @@ Make an instance of the cache, modifying the parameters to fit your use case
 			"type": "revision",
 			"timeout": 300,
 			"schema": {
-				"$ref": "//../schema/revision.json"
+				"$ref": "//../resources/revision.json"
 			},
 			"debug": false,
 			"limit_replicas": false
