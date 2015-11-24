@@ -149,11 +149,13 @@ class HgMozillaOrg(object):
         if not lower_name:
             Log.error("Defective revision? {{rev|json}}", rev=found_revision.branch)
 
-        found_revision.branch = self.branches[(lower_name, locale)]
-        if not found_revision.branch:
-            found_revision.branch = self.branches[(lower_name, DEFAULT_LOCALE)]
-            if not found_revision.branch:
+        b = found_revision.branch = self.branches[(lower_name, locale)]
+        if not b:
+            b = found_revision.branch = self.branches[(lower_name, DEFAULT_LOCALE)]
+            if not b:
                 Log.error("can not find branch ({{branch}}, {{locale}})", name=lower_name, locale=locale)
+        if Date.now() - Date(b.etl.timestamp) > _OLD_BRANCH:
+            self.branches = _hg_branches.get_branches(use_cache=True, settings=self.settings)
 
         url = found_revision.branch.url.rstrip("/") + "/json-pushes?full=1&changeset=" + found_revision.changeset.id
         Log.note(
@@ -197,6 +199,8 @@ class HgMozillaOrg(object):
                             etl={"timestamp": Date.now().unix}
                         )
                         if r.node == found_revision.changeset.id:
+                            output = rev
+                        if r.node[0:12] == found_revision.changeset.id[0:12]:
                             output = rev
                         _id = coalesce(rev.changeset.id12, "") + "-" + rev.branch.name + "-" + coalesce(rev.branch.locale, DEFAULT_LOCALE)
                         revs.append({"id": _id, "value": rev})
