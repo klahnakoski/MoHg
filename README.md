@@ -44,7 +44,7 @@ Make an instance of the cache, modifying the parameters to fit your use case
 	})
 ```
 
-then call `get_revision()` when you need a revision
+then call `get_revision()` when you need a revision:
 
 ```python
 	rev = hg.get_revision({
@@ -53,4 +53,4 @@ then call `get_revision()` when you need a revision
 	})
 ```
 
-... and yes, the call really does require a "complicated" structure to call:  The intent was to convert partial revision objects into completed revision objects. 
+... and yes, the call really does require a "complicated" dict parameter:  The intent was to convert partial revision objects into completed revision objects. 
