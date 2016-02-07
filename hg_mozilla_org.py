@@ -12,13 +12,8 @@ from __future__ import division
 from copy import copy
 import re
 
-from mohg.repos.changesets import Changeset
-from mohg.repos.pushs import Push
-from mohg.repos.revisions import Revision
-
 from pyLibrary.meta import use_settings, cache
 from pyLibrary.queries import qb
-from pyLibrary.queries.unique_index import UniqueIndex
 from pyLibrary.testing import elasticsearch
 from pyLibrary import convert, strings
 from pyLibrary.debugs.logs import Log
@@ -26,7 +21,25 @@ from pyLibrary.dot import set_default, Null, coalesce, unwraplist
 from pyLibrary.env import http
 from pyLibrary.thread.threads import Thread, Lock, Queue
 from pyLibrary.times.dates import Date
-from pyLibrary.times.durations import SECOND, Duration, HOUR
+from pyLibrary.times.durations import SECOND, Duration, HOUR, DAY
+from mohg.repos.changesets import Changeset
+from mohg.repos.pushs import Push
+from mohg.repos.revisions import Revision
+
+
+_hg_branches = None
+_OLD_BRANCH = None
+
+
+def _late_imports():
+    global _hg_branches
+    global _OLD_BRANCH
+
+    from mohg import hg_branches as _hg_branches
+    from mohg.hg_branches import OLD_BRANCH as _OLD_BRANCH
+
+    _ = _hg_branches
+    _ = _OLD_BRANCH
 
 
 DEFAULT_LOCALE = "en-US"
@@ -41,17 +54,21 @@ class HgMozillaOrg(object):
     @use_settings
     def __init__(
         self,
+        hg=None,        # CONNECT TO hg
         repo=None,      # CONNECTION INFO FOR ES CACHE
         branches=None,  # CONNECTION INFO FOR ES CACHE
         use_cache=False,   # True IF WE WILL USE THE ES FOR DOWNLOADING BRANCHES
         timeout=30 * SECOND,
         settings=None
     ):
+        if not _hg_branches:
+            _late_imports()
+
         self.settings = settings
         self.timeout = Duration(timeout)
 
         if branches == None:
-            self.branches = self.get_branches()
+            self.branches = _hg_branches.get_branches(settings=settings)
             self.es = None
             return
 
@@ -59,11 +76,7 @@ class HgMozillaOrg(object):
         self.es.add_alias()
         self.es.set_refresh_interval(seconds=1)
 
-        self.branches = self.get_branches(use_cache=use_cache)
-        for b in self.branches:
-            if b.url.startswith("http"):
-                continue
-            Log.error("Expecting a valid url")
+        self.branches = _hg_branches.get_branches(use_cache=use_cache, settings=settings)
 
         # TO ESTABLISH DATA
         self.es.add({"id": "b3649fd5cd7a-mozilla-inbound-en-US", "value": {
@@ -244,28 +257,6 @@ class HgMozillaOrg(object):
             return self._get_and_retry("/".join(path), branch, **kwargs)
 
         Log.error("Tried {{url}} twice.  Both failed.", {"url": url}, cause=[e, f])
-
-
-    def get_branches(self, use_cache=True):
-        if not self.settings.branches or not use_cache:
-            from testlog_etl import etl_hg_branch
-
-            return etl_hg_branch.get_branches(settings={"url": "https://hg.mozilla.org"})
-
-        #TRY ES
-        es = elasticsearch.Cluster(settings=self.settings.branches).get_index(settings=self.settings.branches)
-        query = {
-            "query": {"match_all": {}},
-            "size": 20000
-        }
-
-        docs = es.search(query).hits.hits._source
-        for d in docs:
-            d.name = d.name.lower()
-        try:
-            return UniqueIndex(["name", "locale"], data=docs, fail_on_dup=False)
-        except Exception, e:
-            Log.error("Bad branch in ES index", cause=e)
 
     @cache(duration=HOUR, lock=True)
     def find_changeset(self, revision, please_stop=False):

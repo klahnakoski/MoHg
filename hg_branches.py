@@ -18,8 +18,7 @@ from pyLibrary.maths import Math
 from pyLibrary.meta import use_settings
 from pyLibrary.queries.unique_index import UniqueIndex
 from pyLibrary.times.dates import Date
-from pyLibrary.times.durations import SECOND, DAY, MINUTE
-
+from pyLibrary.times.durations import SECOND, DAY
 from mohg.hg_mozilla_org import DEFAULT_LOCALE
 
 
