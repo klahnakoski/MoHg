@@ -342,7 +342,6 @@ class HgMozillaOrg(object):
         return None
 
 
-
 def _trim(url):
     return url.split("/json-pushes?")[0].split("/json-info?")[0]
 
