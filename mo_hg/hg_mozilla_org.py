@@ -23,13 +23,13 @@ from mo_threads import Till
 from mo_times.dates import Date
 from mo_times.durations import SECOND, Duration, HOUR
 
-from mohg.repos.changesets import Changeset
-from mohg.repos.pushs import Push
-from mohg.repos.revisions import Revision
+from mo_hg.repos.changesets import Changeset
+from mo_hg.repos.pushs import Push
+from mo_hg.repos.revisions import Revision
 from pyLibrary import convert
 from pyLibrary.env import http, elasticsearch
 from pyLibrary.meta import cache
-from pyLibrary.queries import jx
+from jx_python import jx
 
 _hg_branches = None
 _OLD_BRANCH = None
@@ -39,8 +39,8 @@ def _late_imports():
     global _hg_branches
     global _OLD_BRANCH
 
-    from mohg import hg_branches as _hg_branches
-    from mohg.hg_branches import OLD_BRANCH as _OLD_BRANCH
+    from mo_hg import hg_branches as _hg_branches
+    from mo_hg.hg_branches import OLD_BRANCH as _OLD_BRANCH
 
     _ = _hg_branches
     _ = _OLD_BRANCH
@@ -153,7 +153,7 @@ class HgMozillaOrg(object):
             try:
                 docs = self.es.search(query).hits.hits
                 break
-            except Exception, e:
+            except Exception as e:
                 e = Except.wrap(e)
                 if "NodeNotConnectedException" in e:
                     # WE LOST A NODE, THIS MAY TAKE A WHILE
@@ -256,13 +256,13 @@ class HgMozillaOrg(object):
         kwargs = set_default(kwargs, {"timeout": self.timeout.seconds})
         try:
             return _get_url(url, branch, **kwargs)
-        except Exception, e:
+        except Exception as e:
             pass
 
         try:
             (Till(seconds=5)).wait()
             return _get_url(url.replace("https://", "http://"), branch, **kwargs)
-        except Exception, f:
+        except Exception as f:
             pass
 
         path = url.split("/")
@@ -314,7 +314,7 @@ class HgMozillaOrg(object):
                         with locker:
                             output.append(b)
                         Log.note("{{revision}} found at {{url}}", url=url, revision=revision)
-                except Exception, f:
+                except Exception as f:
                     problems.append(f)
 
         threads = []
@@ -350,7 +350,7 @@ def _get_url(url, branch, **kwargs):
     with Explanation("get push from {{url}}", url=url):
         response = http.get(url, **kwargs)
         data = convert.json2value(response.content.decode("utf8"))
-        if isinstance(data, basestring) and data.startswith("unknown revision"):
+        if isinstance(data, (unicode, str)) and data.startswith("unknown revision"):
             Log.error("Unknown push {{revision}}", revision=strings.between(data, "'", "'"))
         branch.url = _trim(url)  #RECORD THIS SUCCESS IN THE BRANCH
         return data
