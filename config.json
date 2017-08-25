@@ -1,0 +1,34 @@
+{
+	"use_cache": true,
+	"hg": {
+		"url": "https://hg.mozilla.org"
+	},
+	"branches": {
+		"host": "http://localhost",
+		"port": 9200,
+		"index": "branches",
+		"type": "branch",
+		"timeout": 300,
+		"debug": false,
+		"limit_replicas": true
+	},
+	"repo": {
+		"host": "http://localhost",
+		"port": 9200,
+		"index": "repo",
+		"type": "revision",
+		"timeout": 300,
+		"debug": false,
+		"limit_replicas": false
+	},
+	"debug":{
+		"trace":true,
+		"constants":{
+			"pyLibrary.env.http.default_headers": {"Referer": "https://github.com/klahnakoski/diff-algebra"}
+		},
+		"logs":[
+			{"type":"console"}
+
+		]
+	}
+}
