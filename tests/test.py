@@ -10,7 +10,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
-from mo_json import value2json
+from mo_dots import Null, wrap
 from mo_logs import constants, Log, startup
 from mo_testing.fuzzytestcase import FuzzyTestCase
 from mo_threads import Till
@@ -19,6 +19,7 @@ from mo_hg.hg_mozilla_org import HgMozillaOrg
 
 
 class TestHg(FuzzyTestCase):
+    config = Null
 
     @classmethod
     def setUpClass(cls):
@@ -36,10 +37,18 @@ class TestHg(FuzzyTestCase):
     def setUp(self):
         self.hg = HgMozillaOrg(TestHg.config)
 
-    def test_get_push(self):
+    def test_get_push1(self):
         central = [b for b in self.hg.branches if b.name == "mozilla-central" and b.locale == "en-US"][0]
         test = self.hg._get_push(central, "b6b8e616de32")
         expected = {"date": 1503659542, "user": "archaeopteryx@coole-files.de", "id": 32390}
+        self.assertEqual(test, expected)
+        while len(self.hg.todo.queue):
+            Till(seconds=1).wait()
+
+    def test_get_push2(self):
+        central = [b for b in self.hg.branches if b.name == "mozilla-central" and b.locale == "en-US"][0]
+        test = self.hg.get_revision(wrap({"branch":central, "changeset":{"id":"de7aa6b08234"}}))
+        expected = {"changeset": {"backedoutby": "f384789a29dcfd514d25d4a16a97ec5309612d78"}}
         self.assertEqual(test, expected)
         while len(self.hg.todo.queue):
             Till(seconds=1).wait()
