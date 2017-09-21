@@ -24,7 +24,7 @@
 	"debug":{
 		"trace":true,
 		"constants":{
-			"pyLibrary.env.http.default_headers": {"Referer": "https://github.com/klahnakoski/diff-algebra"}
+			"pyLibrary.env.http.default_headers": {"Referer": "https://github.com/klahnakoski/mo-hg"}
 		},
 		"logs":[
 			{"type":"console"}
