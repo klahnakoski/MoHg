@@ -24,7 +24,8 @@
 	"debug":{
 		"trace":true,
 		"constants":{
-			"pyLibrary.env.http.default_headers": {"Referer": "https://github.com/klahnakoski/mo-hg"}
+			"pyLibrary.env.http.default_headers": {"Referer": "https://github.com/klahnakoski/mo-hg"},
+			"mo_hg.hg_mozilla_org.MAX_DIFF_SIZE":1000000
 		},
 		"logs":[
 			{"type":"console"}

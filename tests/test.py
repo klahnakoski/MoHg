@@ -11,11 +11,13 @@ from __future__ import division
 from __future__ import unicode_literals
 
 from mo_dots import Null, wrap
+from mo_files import File
 from mo_logs import constants, Log, startup
 from mo_testing.fuzzytestcase import FuzzyTestCase
 from mo_threads import Till
 
 from mo_hg.hg_mozilla_org import HgMozillaOrg
+from mo_hg.parse import diff_to_json
 
 
 class TestHg(FuzzyTestCase):
@@ -45,10 +47,43 @@ class TestHg(FuzzyTestCase):
         while len(self.hg.todo.queue):
             Till(seconds=1).wait()
 
-    def test_get_push2(self):
+    def test_get_rev_with_backout(self):
         central = [b for b in self.hg.branches if b.name == "mozilla-central" and b.locale == "en-US"][0]
         test = self.hg.get_revision(wrap({"branch":central, "changeset":{"id":"de7aa6b08234"}}))
         expected = {"changeset": {"backedoutby": "f384789a29dcfd514d25d4a16a97ec5309612d78"}}
         self.assertEqual(test, expected)
         while len(self.hg.todo.queue):
             Till(seconds=1).wait()
+
+    def test_get_prefix_space(self):
+        central = [b for b in self.hg.branches if b.name == "mozilla-central" and b.locale == "en-US"][0]
+        test = self.hg.get_revision(wrap({"branch": central, "changeset": {"id": "de7aa6b08234"}}), None, True)
+
+        self.assertTrue(test.changeset.diff[1].changes[0].new.content.startswith("    "))
+
+    def test_diff_to_json(self):
+        j1 = diff_to_json(File("tests/resources/diff1.patch").read())
+        j2 = diff_to_json(File("tests/resources/diff2.patch").read())
+
+        e1 = File("tests/resources/diff1.json").read_json(flexible=False, leaves=False)
+        e2 = File("tests/resources/diff2.json").read_json(flexible=False, leaves=False)
+        self.assertEqual(j1, e1)
+        self.assertEqual(j2, e2)
+
+    def test_big_changeset_to_json(self):
+        j1 = diff_to_json(File("tests/resources/big.patch").read())
+        expected = File("tests/resources/big.json").read_json(flexible=False, leaves=False)
+        self.assertEqual(j1, expected)
+
+    def test_changeset_to_json(self):
+        j1 = self.hg.get_revision(
+            wrap({
+                "branch": {"name": "mozilla-central", "url": "https://hg.mozilla.org/mozilla-central"},
+                "changeset": {"id": "e5693cea1ec944ca0"}
+            }),
+            None,  # Locale
+            True   # get_diff
+        )
+        expected = File("tests/resources/big.json").read_json(flexible=False, leaves=False)
+        self.assertEqual(j1.changeset.diff, expected)
+
