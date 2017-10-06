@@ -9,9 +9,6 @@
 		"index": "branches",
 		"type": "branch",
 		"timeout": 300,
-		"schema": {
-			"$ref": "//branch.json"
-		},
 		"debug": false,
 		"limit_replicas": true
 	},
@@ -21,10 +18,18 @@
 		"index": "repo",
 		"type": "revision",
 		"timeout": 300,
-		"schema": {
-			"$ref": "//revision.json"
-		},
 		"debug": false,
 		"limit_replicas": false
+	},
+	"debug":{
+		"trace":true,
+		"constants":{
+			"pyLibrary.env.http.default_headers": {"Referer": "https://github.com/klahnakoski/mo-hg"},
+			"mo_hg.hg_mozilla_org.MAX_DIFF_SIZE":1000000
+		},
+		"logs":[
+			{"type":"console"}
+
+		]
 	}
 }

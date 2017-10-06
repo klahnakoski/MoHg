@@ -8,17 +8,17 @@
 			"_source": {
 				"compress": false
 			},
-			"_id" : {
+			"_id": {
 				"index": "not_analyzed",
 				"type": "string",
 				"store": true
-	        },
+			},
 			"_all": {
 				"enabled": false
 			},
 			"_routing": {
 				"required": true,
-				"path":"changeset.id12"
+				"path": "changeset.id12"
 			},
 			"dynamic_templates": [
 				{
@@ -56,17 +56,16 @@
 				}
 			],
 			"properties": {
-				"changeset":{
-					"type":"object",
-					"properties":{
+				"changeset": {
+					"type": "object",
+					"properties": {
 						"description": {
-				            "index": "analyzed",
-				            "type": "string"
-				        }
+							"index": "analyzed",
+							"type": "string"
+						}
 					}
 				}
 			}
 		}
 	}
-
 }
