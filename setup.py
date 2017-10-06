@@ -42,7 +42,7 @@ def find_packages(where='.', lib_prefix='', exclude=()):
 
 setup(
     name='mo-hg',
-    version="1.5.17227",
+    version="1.5.17279",
     description='Fast cache for Mozilla\'s Mercurial repository',
     long_description=long_desc,
     author='Kyle Lahnakoski',
@@ -50,7 +50,7 @@ setup(
     url='https://github.com/klahnakoski/mo-hg',
     license='MPL 2.0',
     packages=find_packages(),
-    install_requires=[],
+    install_requires=["BeautifulSoup", "mo_collections", "mo_dots", "mo_kwargs", "mo_logs", "mo_math", "mo_threads", "mo_times", "pyLibrary"],
     include_package_data=True,
     zip_safe=False,
     classifiers=[  #https://pypi.python.org/pypi?%3Aaction=list_classifiers
