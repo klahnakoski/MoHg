@@ -1,2 +1,0 @@
-mo_hg
-tests
