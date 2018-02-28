@@ -14,15 +14,9 @@ import re
 from collections import Mapping
 from copy import copy
 
-from future.utils import text_type, binary_type
-
 import mo_threads
-from jx_python import jx
 from mo_dots import set_default, Null, coalesce, unwraplist, listwrap, wrap, Data
-from mo_hg.parse import diff_to_json
-from mo_hg.repos.changesets import Changeset
-from mo_hg.repos.pushs import Push
-from mo_hg.repos.revisions import Revision, revision_schema
+from mo_future import text_type, binary_type
 from mo_json import json2value
 from mo_kwargs import override
 from mo_logs import Log, strings, machine_metadata
@@ -32,7 +26,12 @@ from mo_math.randoms import Random
 from mo_threads import Thread, Lock, Queue, THREAD_STOP
 from mo_threads import Till
 from mo_times.dates import Date
-from mo_times.durations import SECOND, Duration, HOUR, MINUTE, DAY, MONTH
+from mo_times.durations import SECOND, Duration, HOUR, MINUTE, DAY
+
+from mo_hg.parse import diff_to_json
+from mo_hg.repos.changesets import Changeset
+from mo_hg.repos.pushs import Push
+from mo_hg.repos.revisions import Revision, revision_schema
 from pyLibrary.env import http, elasticsearch
 from pyLibrary.meta import cache
 
@@ -56,13 +55,16 @@ def _late_imports():
 
 
 DEFAULT_LOCALE = "en-US"
-DEBUG = True
-DAEMON_DEBUG = True
-DAEMON_INTERVAL = 30 * SECOND
+DEBUG = False
+DAEMON_DEBUG = False
+DAEMON_HG_INTERVAL = 30 * SECOND  # HOW LONG TO WAIT BETWEEN HG REQUESTS (MAX)
+DAEMON_WAIT_AFTER_TIMEOUT = 10 * MINUTE  # IF WE SEE A TIMEOUT, THEN WAIT
 DAEMON_DO_NO_SCAN = ["try"]  # SOME BRANCHES ARE NOT WORTH SCANNING
 DAEMON_QUEUE_SIZE = 2 ** 15
-MAX_TODO_AGE = MONTH  # THE DAEMON WILL NEVER STOP SCANNING; DO NOT ADD OLD REVISIONS TO THE todo QUEUE
+DAEMON_RECENT_HG_PULL = 2 * SECOND  # DETERMINE IF WE GOT DATA FROM HG (RECENT), OR ES (OLDER)
+MAX_TODO_AGE = DAY  # THE DAEMON WILL NEVER STOP SCANNING; DO NOT ADD OLD REVISIONS TO THE todo QUEUE
 MIN_ETL_AGE = Date("22sep2017").unix  # sept 22nd 2017  ARTIFACTS OLDER THAN THIS IN ES ARE REPLACED
+
 
 GET_DIFF = True
 MAX_DIFF_SIZE = 1000
@@ -97,6 +99,10 @@ class HgMozillaOrg(object):
 
         self.settings = kwargs
         self.timeout = Duration(timeout)
+
+        # VERIFY CONNECTIVITY
+        with Explanation("Test connect with hg"):
+            response = http.head(self.settings.hg.url)
 
         if branches == None:
             self.branches = _hg_branches.get_branches(kwargs=kwargs)
@@ -134,11 +140,28 @@ class HgMozillaOrg(object):
 
                 # FIND THE REVSIONS ON THIS BRANCH
                 for r in list(revisions):
-                    with Explanation("Scanning {{branch}} {{revision|left(12)}}", branch=branch.name, revision=r, debug=DAEMON_DEBUG):
+                    try:
                         rev = self.get_revision(Revision(branch=branch, changeset={"id": r}))
                         if DAEMON_DEBUG:
                             Log.note("found revision with push date {{date|datetime}}", date=rev.push.date)
                         revisions.discard(r)
+
+                        if rev.etl.timestamp > Date.now()-DAEMON_RECENT_HG_PULL:
+                            # SOME PUSHES ARE BIG, RUNNING THE RISK OTHER MACHINES ARE
+                            # ALSO INTERESTED AND PERFORMING THE SAME SCAN. THIS DELAY
+                            # WILL HAVE SMALL EFFECT ON THE MAJORITY OF SMALL PUSHES
+                            # https://bugzilla.mozilla.org/show_bug.cgi?id=1417720
+                            Till(seconds=Random.float(DAEMON_HG_INTERVAL).seconds).wait()
+                    except Exception as e:
+                        Log.warning(
+                            "Scanning {{branch}} {{revision|left(12)}}",
+                            branch=branch.name,
+                            revision=r,
+                            cause=e
+                        )
+                        if "Read timed out" in e:
+                            Till(seconds=DAEMON_WAIT_AFTER_TIMEOUT.seconds).wait()
+
 
                 # FIND ANY BRANCH THAT MAY HAVE THIS REVISION
                 for r in list(revisions):
@@ -189,8 +212,6 @@ class HgMozillaOrg(object):
             self.branches = _hg_branches.get_branches(kwargs=self.settings)
 
         push = self._get_push(found_revision.branch, found_revision.changeset.id)
-        if not push:
-            Log.error("did not get push!")
 
         url1 = found_revision.branch.url.rstrip("/") + "/json-info?node=" + found_revision.changeset.id[0:12]
         url2 = found_revision.branch.url.rstrip("/") + "/json-rev/" + found_revision.changeset.id[0:12]
@@ -200,7 +221,7 @@ class HgMozillaOrg(object):
                 raw_rev1 = self._get_raw_json_info(url1, found_revision.branch)
                 raw_rev2 = self._get_raw_json_rev(url2, found_revision.branch)
             except Exception as e:
-                if "Hg denies it exists" in e :
+                if "Hg denies it exists" in e:
                     raw_rev1 = Data(node=revision.changeset.id)
                 else:
                     raise e
@@ -267,6 +288,8 @@ class HgMozillaOrg(object):
         raw_revs = self._get_and_retry(url, branch)
         if "(not in 'served' subset)" in raw_revs:
             Log.error("Tried {{url}}. Hg denies it exists.", url=url)
+        if isinstance(raw_revs, text_type) and raw_revs.startswith("unknown revision '"):
+            Log.error("Tried {{url}}. Hg denies it exists.", url=url)
         if len(raw_revs) != 1:
             Log.error("do not know what to do")
         return raw_revs.values()[0]
@@ -311,9 +334,13 @@ class HgMozillaOrg(object):
                 Push(id=int(index), date=_push.date, user=_push.user)
                 for index, _push in data.items()
             ]
-        if len(pushes) != 1:
+
+        if len(pushes) == 0:
+            return Null
+        elif len(pushes) == 1:
+            return pushes[0]
+        else:
             Log.error("do not know what to do")
-        return pushes[0]
 
     def _normalize_revision(self, r, found_revision, push, get_diff):
         new_names = set(r.keys()) - {"rev", "node", "user", "description", "desc", "date", "files", "backedoutby", "parents", "children", "branch", "tags", "pushuser", "pushdate", "pushid", "phase", "bookmarks"}
