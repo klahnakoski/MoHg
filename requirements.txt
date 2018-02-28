@@ -1,4 +1,5 @@
 BeautifulSoup 
+mo-future
 mo_collections
 mo_dots
 mo_kwargs
