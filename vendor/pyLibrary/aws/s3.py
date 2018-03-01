@@ -314,7 +314,7 @@ class Bucket(object):
                     value = convert.bytes2zip(value)
                     key += ".json.gz"
                 else:
-                    value = convert.bytes2zip(convert.unicode2utf8(value))
+                    value = convert.bytes2zip(unicode2utf8(value))
                     key += ".json.gz"
 
             else:

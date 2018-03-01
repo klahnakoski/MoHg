@@ -16,27 +16,22 @@ from collections import Mapping
 from copy import deepcopy
 
 import mo_json
-from jx_python.meta import Column
 from jx_python import jx
 from jx_python.expressions import jx_expression_to_function
+from jx_python.meta import Column
 from mo_dots import coalesce, Null, Data, set_default, listwrap, literal_field, ROOT_PATH, concat_field, split_field
-from mo_dots import wrap
-from mo_dots.lists import FlatList
+from mo_dots import wrap, FlatList
 from mo_future import text_type, binary_type
 from mo_json import value2json
 from mo_json.typed_encoder import EXISTS_TYPE, BOOLEAN_TYPE, STRING_TYPE, NUMBER_TYPE, NESTED_TYPE, TYPE_PREFIX
 from mo_kwargs import override
 from mo_logs import Log, strings
 from mo_logs.exceptions import Except
-from mo_logs.strings import utf82unicode
+from mo_logs.strings import utf82unicode, unicode2utf8
 from mo_math import Math
 from mo_math.randoms import Random
-from mo_threads import Lock
-from mo_threads import ThreadedQueue
-from mo_threads import Till
-from mo_times.dates import Date
-from mo_times.timer import Timer
-
+from mo_threads import Lock, ThreadedQueue, Till
+from mo_times import Date, Timer
 from pyLibrary import convert
 from pyLibrary.env import http
 
@@ -44,6 +39,8 @@ ES_STRUCT = ["object", "nested"]
 ES_NUMERIC_TYPES = ["long", "integer", "double", "float"]
 ES_PRIMITIVE_TYPES = ["string", "boolean", "integer", "date", "long", "double"]
 INDEX_DATE_FORMAT = "%Y%m%d_%H%M%S"
+
+DATA_KEY = text_type("data")
 
 
 class Features(object):
@@ -294,8 +291,8 @@ class Index(Features):
         try:
             for r in records:
                 rec = self.encode(r)
-                json_bytes = rec['json'].encode('utf8')
-                lines.append(b'{"index":{"_id": ' + convert.value2json(rec['id']).encode("utf8") + b'}}')
+                json_bytes = rec['json']
+                lines.append('{"index":{"_id": ' + convert.value2json(rec['id']) + '}}')
                 lines.append(json_bytes)
 
             del records
@@ -305,7 +302,7 @@ class Index(Features):
 
             with Timer("Add {{num}} documents to {{index}}", {"num": len(lines) / 2, "index":self.settings.index}, debug=self.debug):
                 try:
-                    data_bytes = b"\n".join(l for l in lines) + b"\n"
+                    data_string = "\n".join(l for l in lines) + "\n"
                 except Exception as e:
                     raise Log.error("can not make request body from\n{{lines|indent}}", lines=lines, cause=e)
 
@@ -316,7 +313,7 @@ class Index(Features):
 
                 response = self.cluster.post(
                     self.path + "/_bulk",
-                    data=data_bytes,
+                    data=data_string,
                     headers={"Content-Type": "application/x-ndjson"},
                     timeout=self.settings.timeout,
                     retry=self.settings.retry,
@@ -344,7 +341,7 @@ class Index(Features):
                                 status=items[i].index.status,
                                 error=items[i].index.error,
                                 some=len(fails) - 1,
-                                line=strings.limit(lines[i * 2 + 1].decode('utf8'), 500 if not self.debug else 100000),
+                                line=strings.limit(lines[i * 2 + 1], 500 if not self.debug else 100000),
                                 index=self.settings.index,
                                 tjson=self.settings.tjson,
                                 id=items[i].index._id
@@ -358,7 +355,7 @@ class Index(Features):
                             status=items[i].index.status,
                             error=items[i].index.error,
                             some=len(fails) - 1,
-                            line=strings.limit(lines[i * 2 + 1].decode('utf8'), 500 if not self.debug else 100000),
+                            line=strings.limit(lines[i * 2 + 1], 500 if not self.debug else 100000),
                             index=self.settings.index,
                             tjson=self.settings.tjson,
                             id=items[i].index._id
@@ -366,9 +363,10 @@ class Index(Features):
                     Log.error("Problems with insert", cause=cause)
 
         except Exception as e:
+            e = Except.wrap(e)
             if e.message.startswith("sequence item "):
                 Log.error("problem with {{data}}", data=text_type(repr(lines[int(e.message[14:16].strip())])), cause=e)
-            Log.error("problem sending to ES", e)
+            Log.error("problem sending to ES", cause=e)
 
     # RECORDS MUST HAVE id AND json AS A STRING OR
     # HAVE id AND value AS AN OBJECT
@@ -408,7 +406,7 @@ class Index(Features):
         elif self.cluster.version.startswith(("1.4.", "1.5.", "1.6.", "1.7.", "5.", "6.")):
             result = self.cluster.put(
                 "/" + self.settings.index + "/_settings",
-                data=convert.unicode2utf8('{"index":{"refresh_interval":' + value2json(interval) + '}}'),
+                data=unicode2utf8('{"index":{"refresh_interval":' + value2json(interval) + '}}'),
                 **kwargs
             )
 
@@ -783,16 +781,18 @@ class Cluster(object):
             heads["Accept-Encoding"] = "gzip,deflate"
             heads["Content-Type"] = "application/json"
 
-            data = kwargs.get(text_type('data'))
+            data = kwargs.get(DATA_KEY)
             if data == None:
                 pass
             elif isinstance(data, Mapping):
-                kwargs[text_type('data')] = data = convert.unicode2utf8(value2json(data))
-            elif not isinstance(kwargs[text_type('data')], str):
+                kwargs[DATA_KEY] = unicode2utf8(value2json(data))
+            elif isinstance(kwargs[DATA_KEY], text_type):
+                kwargs[DATA_KEY] = unicode2utf8(kwargs[DATA_KEY])
+            else:
                 Log.error("data must be utf8 encoded string")
 
             if self.debug:
-                sample = kwargs.get(text_type('data'), "")[:300]
+                sample = kwargs.get(DATA_KEY, "")[:300]
                 Log.note("{{url}}:\n{{data|indent}}", url=url, data=sample)
 
             if self.debug:
@@ -817,11 +817,11 @@ class Cluster(object):
             else:
                 suggestion = ""
 
-            if kwargs.get("data"):
+            if kwargs.get(DATA_KEY):
                 Log.error(
                     "Problem with call to {{url}}" + suggestion + "\n{{body|left(10000)}}",
                     url=url,
-                    body=strings.limit(kwargs["data"].decode('utf8'), 100 if self.debug else 10000),
+                    body=strings.limit(kwargs[DATA_KEY], 100 if self.debug else 10000),
                     cause=e
                 )
             else:
@@ -884,16 +884,18 @@ class Cluster(object):
         heads[text_type("Accept-Encoding")] = text_type("gzip,deflate")
         heads[text_type("Content-Type")] = text_type("application/json")
 
-        data = kwargs.get(text_type('data'))
+        data = kwargs.get(DATA_KEY)
         if data == None:
             pass
         elif isinstance(data, Mapping):
-            kwargs[text_type('data')] = data = convert.unicode2utf8(convert.value2json(data))
-        elif not isinstance(kwargs["data"], str):
+            data = kwargs[DATA_KEY] = unicode2utf8(convert.value2json(data))
+        elif isinstance(kwargs[DATA_KEY], text_type):
+            pass
+        else:
             Log.error("data must be utf8 encoded string")
 
         if self.debug:
-            sample = kwargs.get(text_type('data'), "")[:1000]
+            sample = kwargs.get(DATA_KEY, "")[:1000]
             Log.note("{{url}}:\n{{data|indent}}", url=url, data=sample)
         try:
             response = http.put(url, **kwargs)

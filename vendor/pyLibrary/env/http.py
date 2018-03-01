@@ -220,9 +220,9 @@ def post_json(url, **kwargs):
     ASSUME RESPONSE IN IN JSON
     """
     if 'json' in kwargs:
-        kwargs['data'] = convert.unicode2utf8(value2json(kwargs['json']))
+        kwargs['data'] = unicode2utf8(value2json(kwargs['json']))
     elif 'data' in kwargs:
-        kwargs['data'] = convert.unicode2utf8(value2json(kwargs['data']))
+        kwargs['data'] = unicode2utf8(value2json(kwargs['data']))
     else:
         Log.error(u"Expecting `json` parameter")
 
