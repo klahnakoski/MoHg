@@ -1,4 +1,4 @@
-BeautifulSoup 
+beautifulsoup4
 mo-future
 mo_collections
 mo_dots

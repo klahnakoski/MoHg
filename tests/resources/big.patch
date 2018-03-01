@@ -17164,7 +17164,7 @@ diff --git a/layout/base/crashtests/363729-2.html b/layout/base/crashtests/36372
 -<html class="reftest-print">
 +<html class="reftest-paged">
  <head>
- <title>Testcase Bug 363729 ï¿½ Crash [@ nsIFrame::GetPositionIgnoringScrolling] on print preview that uses position: fixed</title>
+ <title>Testcase Bug 363729 – Crash [@ nsIFrame::GetPositionIgnoringScrolling] on print preview that uses position: fixed</title>
  </head>
  <body>
  This page should not crash on print preview
@@ -17178,7 +17178,7 @@ diff --git a/layout/base/crashtests/363729-3.html b/layout/base/crashtests/36372
 -<html class="reftest-print">
 +<html class="reftest-paged">
  <head>
- <title>Testcase Bug 363729 ï¿½ Crash [@ nsIFrame::GetPositionIgnoringScrolling] on print preview that uses position: fixed (Branch version)</title>
+ <title>Testcase Bug 363729 – Crash [@ nsIFrame::GetPositionIgnoringScrolling] on print preview that uses position: fixed (Branch version)</title>
  </head>
  <body>
  This page should not crash on print preview

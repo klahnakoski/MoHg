@@ -12,12 +12,11 @@ from __future__ import unicode_literals
 
 from mo_dots import Null, wrap
 from mo_files import File
+from mo_hg.hg_mozilla_org import HgMozillaOrg
+from mo_hg.parse import diff_to_json
 from mo_logs import constants, Log, startup
 from mo_testing.fuzzytestcase import FuzzyTestCase
 from mo_threads import Till
-
-from mo_hg.hg_mozilla_org import HgMozillaOrg
-from mo_hg.parse import diff_to_json
 
 
 class TestHg(FuzzyTestCase):
@@ -71,7 +70,10 @@ class TestHg(FuzzyTestCase):
         self.assertEqual(j2, e2)
 
     def test_big_changeset_to_json(self):
-        j1 = diff_to_json(File("tests/resources/big.patch").read())
+        big_patch_file = File("tests/resources/big.patch")
+        # big_patch_file.write_bytes(http.get("https://hg.mozilla.org/mozilla-central/raw-rev/e5693cea1ec944ca077c7a46c5f127c828a90f1b").content)
+
+        j1 = diff_to_json(big_patch_file.read_bytes().decode("utf8", "replace"))
         expected = File("tests/resources/big.json").read_json(flexible=False, leaves=False)
         self.assertEqual(j1, expected)
 
