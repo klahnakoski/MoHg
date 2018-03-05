@@ -1293,7 +1293,8 @@ def retro_schema(schema):
                 "dynamic_templates": (
                     [
                         retro_dynamic_template(*(t.items()[0])) for t in details.dynamic_templates
-                    ] + [
+                    ] +
+                    [
                         {
                             "default_strings": {
                                 "mapping": {
@@ -1343,6 +1344,18 @@ def retro_properties(properties):
         if v.properties:
             v.properties = retro_properties(v.properties)
 
+        if v.fields:
+            v.fields = retro_properties(v.fields)
+            v.fields[k] = {
+                "type": v.type,
+                "index": v.index,
+                "doc_values": v.doc_values,
+                "analyzer": v.analyzer
+            }
+            v.type = "multi_field"
+            v.index = None
+            v.doc_values = None
+            v.analyzer = None
         output[k] = v
     return output
 
