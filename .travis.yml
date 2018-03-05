@@ -17,7 +17,7 @@ env:
     - PYTHONPATH=.:tests:vendor
 
 install:
-  - "export ES_DOWNLOAD_URL=https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz"
+  - "export ES_DOWNLOAD_URL=https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-${ES_VERSION}.tar.gz"
   - "wget ${ES_DOWNLOAD_URL}"
   - "tar -xzf elasticsearch-${ES_VERSION}.tar.gz"
   - "sudo cp -f tests/travis/elasticsearch.yml ./elasticsearch-${ES_VERSION}/config/elasticsearch.yml"
