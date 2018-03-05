@@ -191,15 +191,6 @@ branches_schema = {
             },
             "dynamic_templates": [
                 {
-                    "default_ids": {
-                        "mapping": {
-                            "index": "not_analyzed",
-                            "type": "string"
-                        },
-                        "match": "id"
-                    }
-                },
-                {
                     "default_strings": {
                         "mapping": {
                             "type": "keyword"

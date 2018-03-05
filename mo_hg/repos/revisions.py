@@ -52,6 +52,17 @@ revision_schema = {
             "_all": {
                 "enabled": False
             },
+            "dynamic_templates": [
+                {
+                    "default_strings": {
+                        "mapping": {
+                            "type": "keyword"
+                        },
+                        "match_mapping_type": "string",
+                        "match": "*"
+                    }
+                }
+            ],
             "properties": {
                 "changeset": {
                     "type": "object",
