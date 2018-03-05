@@ -189,7 +189,8 @@ class Index(Features):
                     {"add": {"index": self.settings.index, "alias": alias}}
                 ]
             },
-            timeout=coalesce(self.settings.timeout, 30)
+            timeout=coalesce(self.settings.timeout, 30),
+            stream=False
         )
         self.settings.alias = alias
 
@@ -678,7 +679,7 @@ class Cluster(object):
 
         if limit_replicas:
             # DO NOT ASK FOR TOO MANY REPLICAS
-            health = self.get("/_cluster/health")
+            health = self.get("/_cluster/health", stream=False)
             if schema.settings.index.number_of_replicas >= health.number_of_nodes:
                 if limit_replicas_warning:
                     Log.warning(
@@ -691,13 +692,14 @@ class Cluster(object):
         self.put(
             "/" + index,
             data=schema,
-            headers={text_type("Content-Type"): text_type("application/json")}
+            headers={text_type("Content-Type"): text_type("application/json")},
+            stream=False
         )
 
         # CONFIRM INDEX EXISTS
         while True:
             try:
-                state = self.get("/_cluster/state", retry={"times": 5}, timeout=3)
+                state = self.get("/_cluster/state", retry={"times": 5}, timeout=3, stream=False)
                 if index in state.metadata.indices:
                     self._metadata = None
                     break
@@ -742,7 +744,7 @@ class Cluster(object):
         RETURN LIST OF {"alias":a, "index":i} PAIRS
         ALL INDEXES INCLUDED, EVEN IF NO ALIAS {"alias":Null}
         """
-        data = self.get("/_aliases", retry={"times": 5}, timeout=3)
+        data = self.get("/_aliases", retry={"times": 5}, timeout=3, stream=False)
         output = []
         for index, desc in data.items():
             if not desc["aliases"]:
@@ -757,7 +759,7 @@ class Cluster(object):
             Log.error("Metadata exploration has been disabled")
 
         if not self._metadata or force:
-            response = self.get("/_cluster/state", retry={"times": 3}, timeout=30)
+            response = self.get("/_cluster/state", retry={"times": 3}, timeout=30, stream=False)
             with self.metadata_locker:
                 self._metadata = wrap(response.metadata)
                 # REPLICATE MAPPING OVER ALL ALIASES
@@ -767,7 +769,7 @@ class Cluster(object):
                     for a in m.aliases:
                         if not indices[a]:
                             indices[a] = m
-                self.cluster_state = wrap(self.get("/"))
+                self.cluster_state = wrap(self.get("/", stream=False))
                 self.version = self.cluster_state.version.number
             return self._metadata
 
@@ -888,7 +890,7 @@ class Cluster(object):
         if data == None:
             pass
         elif isinstance(data, Mapping):
-            data = kwargs[DATA_KEY] = unicode2utf8(convert.value2json(data))
+            kwargs[DATA_KEY] = unicode2utf8(convert.value2json(data))
         elif isinstance(kwargs[DATA_KEY], text_type):
             pass
         else:

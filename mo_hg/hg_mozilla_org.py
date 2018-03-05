@@ -17,7 +17,7 @@ from copy import copy
 import mo_threads
 from mo_dots import set_default, Null, coalesce, unwraplist, listwrap, wrap, Data
 from mo_future import text_type, binary_type
-from mo_json import json2value
+from mo_json import json2value, value2json
 from mo_kwargs import override
 from mo_logs import Log, strings, machine_metadata
 from mo_logs.exceptions import Explanation, assert_no_exception, Except, suppress_exception
