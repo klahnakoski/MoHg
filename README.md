@@ -1,12 +1,21 @@
 
 
-More Mercurial (Hg)!
-====================
+# More Mercurial (Hg)!
 
 Uses ElasticSearch as a fast cache for Mozilla's Mercurial repository.
 
-Usage
------
+
+## Status
+
+|Branch      |Status   |
+|------------|---------|
+|master      | [![Build Status](https://travis-ci.org/mozilla/mo-hg.svg?branch=master)](https://travis-ci.org/mozilla/mo-hg) |
+|dev         | [![Build Status](https://travis-ci.org/mozilla/mo-hg.svg?branch=dev)](https://travis-ci.org/mozilla/mo-hg)    |
+
+
+
+
+## Usage
 
 Make an instance of the cache, modifying the parameters to fit your use case
 

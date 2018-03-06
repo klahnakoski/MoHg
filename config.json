@@ -8,6 +8,7 @@
 		"port": 9200,
 		"index": "branches",
 		"type": "branch",
+		"tjson": false,
 		"timeout": 300,
 		"debug": false,
 		"limit_replicas": true
@@ -17,6 +18,7 @@
 		"port": 9200,
 		"index": "repo",
 		"type": "revision",
+		"tjson": false,
 		"timeout": 300,
 		"debug": false,
 		"limit_replicas": false
