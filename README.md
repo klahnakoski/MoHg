@@ -4,16 +4,10 @@
 
 Uses ElasticSearch as a fast cache for Mozilla's Mercurial repository.
 
-
-## Status
-
 |Branch      |Status   |
 |------------|---------|
 |master      | [![Build Status](https://travis-ci.org/klahnakoski/mo-hg.svg?branch=master)](https://travis-ci.org/klahnakoski/mo-hg) |
 |dev         | [![Build Status](https://travis-ci.org/klahnakoski/mo-hg.svg?branch=dev)](https://travis-ci.org/klahnakoski/mo-hg)    |
-
-
-
 
 ## Usage
 
