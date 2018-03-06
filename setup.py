@@ -42,7 +42,7 @@ def find_packages(where='.', lib_prefix='', exclude=()):
 
 setup(
     name='mo-hg',
-    version="1.5.18059",
+    version="1.8.18059",
     description='Fast cache for Mozilla\'s Mercurial repository',
     long_description=long_desc,
     author='Kyle Lahnakoski',
