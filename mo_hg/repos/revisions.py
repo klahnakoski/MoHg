@@ -30,18 +30,19 @@ revision_schema = {
         "index.number_of_replicas": 1,
         "index.number_of_shards": 6,
         "analysis": {
+            "tokenizer": {
+                "left250": {
+                    "type": "pattern",
+                    "pattern": "^.{1,250}"
+                }
+            },
             "analyzer": {
                 "description_limit": {
                     "type": "custom",
-                    "tokenizer": "keyword",
+                    "tokenizer": "left250",
                     "filter": [
                         "lowercase",
-                        "asciifolding",
-                        {
-                            "type": "limit",
-                            "max": 100,
-                            "min": 5
-                        }
+                        "asciifolding"
                     ]
                 }
             }
