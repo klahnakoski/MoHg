@@ -25,7 +25,7 @@ class TestHg(FuzzyTestCase):
     @classmethod
     def setUpClass(cls):
         try:
-            cls.config = startup.read_settings()
+            cls.config = startup.read_settings(filename="tests/config.json")
             constants.set(cls.config.constants)
             Log.start(cls.config.debug)
         except Exception as e:
