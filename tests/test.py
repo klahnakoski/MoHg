@@ -72,6 +72,7 @@ class TestHg(FuzzyTestCase):
     def test_big_changeset_to_json(self):
         big_patch_file = File("tests/resources/big.patch")
         # big_patch_file.write_bytes(http.get("https://hg.mozilla.org/mozilla-central/raw-rev/e5693cea1ec944ca077c7a46c5f127c828a90f1b").content)
+        self.assertEqual(b'\r'.decode('utf8', 'replace'), u'\r')
 
         j1 = diff_to_json(big_patch_file.read_bytes().decode("utf8", "replace"))
         expected = File("tests/resources/big.json").read_json(flexible=False, leaves=False)
