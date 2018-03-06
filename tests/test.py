@@ -78,6 +78,14 @@ class TestHg(FuzzyTestCase):
         expected = File("tests/resources/big.json").read_json(flexible=False, leaves=False)
         self.assertEqual(j1, expected)
 
+    def test_small_changeset_to_json(self):
+        small_patch_file = File("tests/resources/small.patch")
+        self.assertEqual(b'\r'.decode('utf8', 'replace'), u'\r')
+
+        j1 = diff_to_json(small_patch_file.read_bytes().decode("utf8", "replace"))
+        expected = File("tests/resources/small.json").read_json(flexible=False, leaves=False)
+        self.assertEqual(j1, expected)
+
     def test_changeset_to_json(self):
         j1 = self.hg.get_revision(
             wrap({
