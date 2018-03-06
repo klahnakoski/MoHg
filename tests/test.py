@@ -17,6 +17,7 @@ from mo_hg.parse import diff_to_json
 from mo_logs import constants, Log, startup
 from mo_testing.fuzzytestcase import FuzzyTestCase
 from mo_threads import Till
+from pyLibrary.env import http
 
 
 class TestHg(FuzzyTestCase):
@@ -80,7 +81,7 @@ class TestHg(FuzzyTestCase):
 
     def test_small_changeset_to_json(self):
         small_patch_file = File("tests/resources/small.patch")
-        self.assertEqual(b'\r'.decode('utf8', 'replace'), u'\r')
+
 
         j1 = diff_to_json(small_patch_file.read_bytes().decode("utf8", "replace"))
         expected = File("tests/resources/small.json").read_json(flexible=False, leaves=False)
