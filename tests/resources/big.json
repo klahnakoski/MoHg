@@ -29136,11 +29136,11 @@
     {
         "changes": [
             {"old": {
-                "content": "<html class=\"reftest-print\">\r",
+                "content": "<html class=\"reftest-print\">",
                 "line": 0
             }},
             {"new": {
-                "content": "<html class=\"reftest-paged\">\r",
+                "content": "<html class=\"reftest-paged\">",
                 "line": 0
             }}
         ],
