@@ -10,10 +10,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
-from mo_dots import Null, wrap
+from mo_dots import Null, wrap, coalesce
 from mo_files import File
 from mo_hg.hg_mozilla_org import HgMozillaOrg
-from mo_hg.parse import diff_to_json
+from mo_hg.parse import diff_to_json, diff_to_moves
 from mo_logs import constants, Log, startup
 from mo_testing.fuzzytestcase import FuzzyTestCase
 from mo_threads import Till
@@ -99,3 +99,7 @@ class TestHg(FuzzyTestCase):
         expected = File("tests/resources/big.json").read_json(flexible=False, leaves=False)
         self.assertEqual(j1.changeset.diff, expected)
 
+    def test_coverage_parser(self):
+        diff = http.get('https://hg.mozilla.org/mozilla-central/raw-rev/14dc6342ec5').content.decode('utf8')
+        moves = diff_to_moves(diff)
+        Log.note("{{files}}", files=[m.old.name if m.new.name=='dev/null' else m.new.name for m in moves])
