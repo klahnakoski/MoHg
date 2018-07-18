@@ -62,7 +62,7 @@ DAEMON_QUEUE_SIZE = 2 ** 15
 DAEMON_RECENT_HG_PULL = 2 * SECOND  # DETERMINE IF WE GOT DATA FROM HG (RECENT), OR ES (OLDER)
 MAX_TODO_AGE = DAY  # THE DAEMON WILL NEVER STOP SCANNING; DO NOT ADD OLD REVISIONS TO THE todo QUEUE
 MIN_ETL_AGE = Date("03may2018").unix  # ARTIFACTS OLDER THAN THIS IN ES ARE REPLACED
-
+UNKNOWN_PUSH = "Unknown push {{revision}}"
 
 MAX_DIFF_SIZE = 1000
 DIFF_URL = "{{location}}/raw-rev/{{rev}}"
@@ -185,8 +185,7 @@ class HgMozillaOrg(object):
                 output.changeset.diff = None
             if not get_moves:
                 output.changeset.moves = None
-            if DEBUG:
-                Log.note("Got hg ({{branch}}, {{locale}}, {{revision}}) from ES", branch=output.branch.name, locale=locale, revision=output.changeset.id)
+            DEBUG and Log.note("Got hg ({{branch}}, {{locale}}, {{revision}}) from ES", branch=output.branch.name, locale=locale, revision=output.changeset.id)
             if output.push.date >= Date.now()-MAX_TODO_AGE:
                 self.todo.add((output.branch, listwrap(output.parents)))
                 self.todo.add((output.branch, listwrap(output.children)))
@@ -426,7 +425,8 @@ class HgMozillaOrg(object):
             output = _get_url(url, branch, **kwargs)
             return output
         except Exception as e:
-            output = Null
+            if UNKNOWN_PUSH in e:
+                Log.error("Tried {{url}} and failed", {"url": url}, cause=e)
 
         try:
             (Till(seconds=5)).wait()
@@ -545,18 +545,17 @@ class HgMozillaOrg(object):
                 pass
 
             url = expand_template(DIFF_URL, {"location": revision.branch.url, "rev": changeset_id})
-            if DEBUG:
-                Log.note("get unified diff from {{url}}", url=url)
+            DEBUG and Log.note("get unified diff from {{url}}", url=url)
             try:
                 response = http.get(url)
                 diff = response.content.decode("utf8")
                 json_diff = diff_to_json(diff)
                 num_changes = _count(c for f in json_diff for c in f.changes)
                 if json_diff:
-                    if num_changes < MAX_DIFF_SIZE:
-                        return json_diff
-                    elif revision.changeset.description.startswith("merge "):
+                    if revision.changeset.description.startswith("merge "):
                         return None  # IGNORE THE MERGE CHANGESETS
+                    elif num_changes < MAX_DIFF_SIZE:
+                        return json_diff
                     else:
                         Log.warning("Revision at {{url}} has a diff with {{num}} changes, ignored", url=url, num=num_changes)
                         for file in json_diff:
@@ -605,8 +604,7 @@ class HgMozillaOrg(object):
                 pass
 
             url = expand_template(DIFF_URL, {"location": revision.branch.url, "rev": changeset_id})
-            if DEBUG:
-                Log.note("get unified diff from {{url}}", url=url)
+            DEBUG and Log.note("get unified diff from {{url}}", url=url)
             try:
                 moves = http.get(url).content.decode('latin1')  # THE ENCODING DOES NOT MATTER BECAUSE WE ONLY USE THE '+', '-' PREFIXES IN THE DIFF
                 return diff_to_moves(text_type(moves))
@@ -629,7 +627,7 @@ def _get_url(url, branch, **kwargs):
         response = http.get(url, **kwargs)
         data = json2value(response.content.decode("utf8"))
         if isinstance(data, (text_type, str)) and data.startswith("unknown revision"):
-            Log.error("Unknown push {{revision}}", revision=strings.between(data, "'", "'"))
+            Log.error(UNKNOWN_PUSH, revision=strings.between(data, "'", "'"))
         branch.url = _trim(url)  # RECORD THIS SUCCESS IN THE BRANCH
         return data
 
