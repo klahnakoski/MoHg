@@ -8,13 +8,14 @@
 #
 from __future__ import unicode_literals
 
+import jx_elasticsearch
 from bs4 import BeautifulSoup
 
 from mo_collections import UniqueIndex
-from mo_dots import Data, set_default
+from mo_dots import Data, set_default, FlatList
 from mo_hg.hg_mozilla_org import DEFAULT_LOCALE
 from mo_kwargs import override
-from mo_logs import Log
+from mo_logs import Log, Except
 from mo_logs import startup, constants
 from mo_math import MAX
 from mo_times.dates import Date
@@ -23,20 +24,18 @@ from pyLibrary.env import elasticsearch, http
 
 EXTRA_WAIT_TIME = 20 * SECOND  # WAIT TIME TO SEND TO AWS, IF WE wait_forever
 OLD_BRANCH = DAY
+BRANCH_WHITELIST = None
 
 
 @override
 def get_branches(hg, branches, kwargs=None):
     # TRY ES
+    cluster = elasticsearch.Cluster(branches)
     try:
-        es = elasticsearch.Cluster(kwargs=branches).get_index(kwargs=branches, read_only=False)
+        es = cluster.get_index(kwargs=branches, read_only=False)
+        esq = jx_elasticsearch.new_instance(branches)
+        found_branches = esq.query({"from": "branches", "format": "list", "limit": 10000}).data
 
-        query = {
-            "query": {"match_all": {}},
-            "size": 10000
-        }
-
-        found_branches = es.search(query).hits.hits._source
         # IF IT IS TOO OLD, THEN PULL FROM HG
         oldest = Date(MAX(found_branches.etl.timestamp))
         if oldest == None or Date.now() - oldest > OLD_BRANCH:
@@ -49,11 +48,12 @@ def get_branches(hg, branches, kwargs=None):
         except Exception as e:
             Log.error("Bad branch in ES index", cause=e)
     except Exception as e:
+        e = Except.wrap(e)
         if "Can not find index " in e:
             set_default(branches, {"schema": branches_schema})
-            es = elasticsearch.Cluster(kwargs=branches).get_or_create_index(kwargs=branches)
+            es = cluster.get_or_create_index(branches)
             es.add_alias()
-            return get_branches(kwargs=kwargs)
+            return get_branches(kwargs)
         Log.error("problem getting branches", cause=e)
 
 
@@ -176,6 +176,15 @@ def _get_single_branch_from_hg(settings, description, dir):
                 detail.locale = _path[-1]
                 detail.name = "weave"
 
+            if BRANCH_WHITELIST is not None:
+                found = False
+                for br in BRANCH_WHITELIST:
+                    if br in str(detail.name):
+                        found = True
+                        break
+                if not found:
+                    continue
+
             Log.note("Branch {{name}} {{locale}}", name=detail.name, locale=detail.locale)
             output.append(detail)
         except Exception as e:
@@ -193,27 +202,6 @@ branches_schema = {
         "branch": {
             "_all": {
                 "enabled": False
-            },
-            "dynamic_templates": [
-                {
-                    "default_strings": {
-                        "mapping": {
-                            "type": "keyword"
-                        },
-                        "match_mapping_type": "string",
-                        "match": "*"
-                    }
-                }
-            ],
-            "properties": {
-                "name": {
-                    "type": "keyword",
-                    "store": True
-                },
-                "description": {
-                    "type": "keyword",
-                    "store": True
-                }
             }
         }
     }
