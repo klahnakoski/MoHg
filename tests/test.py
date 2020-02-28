@@ -84,7 +84,6 @@ class TestHg(FuzzyTestCase):
     def test_small_changeset_to_json(self):
         small_patch_file = File("tests/resources/small.patch")
 
-
         j1 = diff_to_json(small_patch_file.read_bytes().decode("utf8", "replace"))
         expected = File("tests/resources/small.json").read_json(flexible=False, leaves=False)
         self.assertEqual(j1, expected)
@@ -111,7 +110,7 @@ class TestHg(FuzzyTestCase):
 
 
     def test_revision_with_bug(self):
-        self.hg.get_revision(
+        rev = self.hg.get_revision(
             wrap({
                 "branch": {"name": "mozilla-central", "url": "https://hg.mozilla.org/mozilla-central"},
                 "changeset": {"id": 'fc9d28ae4655'}
@@ -119,3 +118,6 @@ class TestHg(FuzzyTestCase):
             None,
             True
         )
+        expected = {}
+
+        self.assertEqual(rev, expected)

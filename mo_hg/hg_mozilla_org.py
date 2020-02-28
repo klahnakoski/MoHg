@@ -27,7 +27,7 @@ from mo_dots import (
     wrap,
 )
 from mo_dots.lists import last
-from mo_files import URL
+from mo_files import URL, File
 from mo_future import binary_type, is_text, text, first
 from mo_hg.parse import diff_to_json, diff_to_moves
 from mo_hg.repos.changesets import Changeset
@@ -752,6 +752,8 @@ class HgMozillaOrg(object):
                     diff = response.content.decode("utf8")
                 except Exception as e:
                     diff = response.content.decode("latin1")
+
+                # File("tests/resources/big.patch").write_bytes(response.content)
                 json_diff = diff_to_json(diff)
                 num_changes = _count(c for f in json_diff for c in f.changes)
                 if json_diff:
