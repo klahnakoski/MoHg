@@ -9,12 +9,10 @@ branches:
   - dev
 
 env:
-  matrix:
-    - ES_VERSION=1.7.5  ES_DOWNLOAD_URL=https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.5.tar.gz"
-    - ES_VERSION=6.2.2  ES_DOWNLOAD_URL=https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.2.2.tar.gz
+  - ES_VERSION=6.2.2  ES_DOWNLOAD_URL=https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.2.2.tar.gz
 
   global:
-    - PYTHONPATH=.:tests:vendor
+    - PYTHONPATH=.:vendor
 
 install:
   - "wget ${ES_DOWNLOAD_URL}"
