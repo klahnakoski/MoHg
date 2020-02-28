@@ -482,7 +482,6 @@ class HgMozillaOrg(object):
 
         url = branch.url.rstrip("/") + "/json-pushes?full=1&changeset=" + changeset_id
         with Explanation("Pulling pushlog from {{url}}", url=url, debug=DEBUG):
-            Log.note("Reading pushlog from {{url}}", url=url, changeset=changeset_id)
             data = self._get_and_retry(url, branch)
             # QUEUE UP THE OTHER CHANGESETS IN THE PUSH
             self.todo.add(
@@ -852,15 +851,14 @@ def _trim(url):
 
 
 def _get_url(url, branch, **kwargs):
-    with Explanation("get push from {{url}}", url=url, debug=DEBUG):
-        response = http.get(url, **kwargs)
-        data = json2value(response.content.decode("utf8"))
-        if data.error.startswith("unknown revision"):
-            Log.error(UNKNOWN_PUSH, revision=strings.between(data.error, "'", "'"))
-        if is_text(data) and data.startswith("unknown revision"):
-            Log.error(UNKNOWN_PUSH, revision=strings.between(data, "'", "'"))
-        # branch.url = _trim(url)  # RECORD THIS SUCCESS IN THE BRANCH
-        return data
+    response = http.get(url, **kwargs)
+    data = json2value(response.content.decode("utf8"))
+    if data.error.startswith("unknown revision"):
+        Log.error(UNKNOWN_PUSH, revision=strings.between(data.error, "'", "'"))
+    if is_text(data) and data.startswith("unknown revision"):
+        Log.error(UNKNOWN_PUSH, revision=strings.between(data, "'", "'"))
+    # branch.url = _trim(url)  # RECORD THIS SUCCESS IN THE BRANCH
+    return data
 
 
 def parse_hg_date(date):
