@@ -3,9 +3,9 @@ mo-future
 mo-collections
 mo-dots
 mo-kwargs
+mo-http
 mo-logs
 mo-math
 mo-times
 mo-threads
-pyLibrary
-jx_elasticsearch
+jx-elasticsearch
