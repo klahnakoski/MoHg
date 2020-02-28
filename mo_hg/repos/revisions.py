@@ -7,11 +7,10 @@
 # Author: Kyle Lahnakoski (kyle@lahnakoski.com)
 #
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from mo_dots import Data
+from mo_dots.datas import register_data
 
 
 class Revision(Data):
@@ -21,63 +20,42 @@ class Revision(Data):
     def __eq__(self, other):
         if other == None:
             return False
-        return (self.branch.name.lower(), self.changeset.id[:12]) == (other.branch.name.lower(), other.changeset.id[:12])
+        return (self.branch.name.lower(), self.changeset.id[:12]) == (
+            other.branch.name.lower(),
+            other.changeset.id[:12],
+        )
+
+
+register_data(Revision,)
 
 
 revision_schema = {
-
-
     "settings": {
         "index.number_of_replicas": 1,
         "index.number_of_shards": 6,
         "analysis": {
-            "tokenizer": {
-                "left250": {
-                    "type": "pattern",
-                    "pattern": "^.{1,250}"
-                }
-            },
+            "tokenizer": {"left250": {"type": "pattern", "pattern": "^.{1,250}"}},
             "analyzer": {
                 "description_limit": {
                     "type": "custom",
                     "tokenizer": "left250",
-                    "filter": [
-                        "lowercase",
-                        "asciifolding"
-                    ]
+                    "filter": ["lowercase", "asciifolding"],
                 }
-            }
-        }
+            },
+        },
     },
     "mappings": {
         "revision": {
-            "_all": {
-                "enabled": False
-            },
-            "dynamic_templates": [
-                {
-                    "default_strings": {
-                        "mapping": {
-                            "type": "keyword"
-                        },
-                        "match_mapping_type": "string",
-                        "match": "*"
-                    }
-                }
-            ],
+            "_all": {"enabled": False},
             "properties": {
                 "changeset": {
                     "type": "object",
                     "properties": {
                         "description": {
+                            "store": True,
                             "index": True,
                             "type": "text",
-                            "fields": {
-                                "raw": {
-                                    "type": "text",
-                                    "analyzer": "description_limit"
-                                }
-                            }
+                            "fields": {"raw": {"type": "text", "analyzer": "description_limit"}},
                         },
                         "diff": {
                             "type": "nested",
@@ -91,28 +69,23 @@ revision_schema = {
                                             "type": "object",
                                             "dynamic": True,
                                             "properties": {
-                                                "content": {
-                                                    "type": "keyword"
-                                                }
-                                            }
+                                                "content": {"store": True, "type": "keyword"}
+                                            },
                                         },
                                         "old": {
                                             "type": "object",
                                             "dynamic": True,
                                             "properties": {
-                                                "content": {
-                                                    "type": "keyword"
-                                                }
-                                            }
-                                        }
-                                    }
+                                                "content": {"store": True, "type": "keyword"}
+                                            },
+                                        },
+                                    },
                                 }
-
-                            }
-                        }
-                    }
+                            },
+                        },
+                    },
                 }
-            }
+            },
         }
-    }
+    },
 }
