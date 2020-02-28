@@ -1,3 +1,5 @@
 .svn
 .idea
 *.iml
+__pycache__
+vendor

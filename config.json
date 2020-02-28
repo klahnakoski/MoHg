@@ -3,22 +3,12 @@
 	"hg": {
 		"url": "https://hg.mozilla.org"
 	},
-	"branches": {
-		"host": "http://localhost",
-		"port": 9200,
-		"index": "branches",
-		"type": "branch",
-		"tjson": false,
-		"timeout": 300,
-		"debug": false,
-		"limit_replicas": true
-	},
 	"repo": {
 		"host": "http://localhost",
 		"port": 9200,
 		"index": "repo",
 		"type": "revision",
-		"tjson": false,
+		"typed": false,
 		"timeout": 300,
 		"debug": false,
 		"limit_replicas": false
@@ -26,11 +16,11 @@
 	"debug":{
 		"trace":true,
 		"constants":{
-			"pyLibrary.env.http.default_headers": {"Referer": "https://github.com/klahnakoski/mo-hg"},
+			"mo_http.http.default_headers": {"Referer": "https://github.com/klahnakoski/mo-hg"},
 			"mo_hg.hg_mozilla_org.MAX_DIFF_SIZE":1000000
 		},
 		"logs":[
-			{"type":"console"}
+			{"log_type":"console"}
 
 		]
 	}

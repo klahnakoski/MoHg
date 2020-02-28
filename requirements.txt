@@ -8,3 +8,4 @@ mo-math
 mo-times
 mo-threads
 pyLibrary
+jx_elasticsearch
